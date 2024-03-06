@@ -7,28 +7,73 @@ using UnityEngine;
 public class MouseInteraction : MonoBehaviour
 {
     private static MouseInteraction _instance;
-    
     public static MouseInteraction Instance => _instance;
     
     private Camera _camera;
     
+    private Vector2Int[] _directions = new Vector2Int[]
+    {
+        new Vector2Int(1, 0),
+        new Vector2Int(-1, 0),
+        new Vector2Int(0, 1),
+        new Vector2Int(0, -1)
+    };
+    
     class AStarNode
     {
         public Vector2 Position;
+        public Vector2Int PositionInt;
         public float Sum;
         public AStarNode Parent = null;
         
-        public AStarNode(Vector2 position, float sum)
+        public AStarNode(Vector2Int position, float sum)
         {
-            Position = position;
+            PositionInt = position;
             Sum = sum;
+            Position = new Vector2(position.x / 10f, position.y / 10f);
         }
         
+        public AStarNode(Vector2Int position, float sum, AStarNode parent)
+        {
+            PositionInt = position;
+            Sum = sum;
+            Position = new Vector2(position.x / 10f, position.y / 10f);
+            Parent = parent;
+            
+            OptimizeParent();
+        }
+
         public AStarNode(Vector2 position, float sum, AStarNode parent)
         {
-            Position = position;
+            PositionInt = new Vector2Int((int)position.x * 10, (int)position.y * 10);
             Sum = sum;
+            Position = position;
             Parent = parent;
+            
+            OptimizeParent();
+        }
+
+        private void OptimizeParent()
+        {
+            if(Parent == null)
+                return;
+
+            if (Parent.Parent == null)
+                return;
+            
+            float distance = Vector2.Distance(Position, Parent.Parent.Position);
+            
+            RaycastHit2D hit = Physics2D.Raycast(Position, Parent.Parent.Position - Position, distance);
+            
+            if (hit.collider != null)
+                return;
+            
+            this.Sum -= Vector2.Distance(Position, Parent.Position);
+            this.Sum += Vector2.Distance(Position, Parent.Parent.Position);
+            
+            Parent = Parent.Parent;
+            
+            OptimizeParent();
         }
     }
     
@@ -38,110 +83,101 @@ public class MouseInteraction : MonoBehaviour
         GameObject go = new GameObject("MouseInteraction");
         _instance = go.AddComponent<MouseInteraction>();
         _instance._camera = Camera.main;
-        
-        PriorityQueue<int> queue = new (Comparer<int>.Create((x, y) =>
-        {
-            return x.CompareTo(y);
-        }));
     }
     
     void Update()
     {
-        Vector2 vector2 = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        
         if (Input.GetMouseButtonDown(0))
         {
-            List<AStarNode> nodes = new List<AStarNode>();
-            nodes.Add(new AStarNode(Vector2.zero, 0));
-            AnalyseRay(ref nodes, vector2);
-            nodes.Clear();
+            Vector2 vector2 = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            
+            PriorityQueue<AStarNode> queue = new (Comparer<AStarNode>.Create((x, y) =>
+            {
+                return -x.Sum.CompareTo(y.Sum);
+            }));
+            
+            Dictionary<Vector2Int, float> dp = new();
+            AStarNode start = new AStarNode(Vector2Int.zero, 0);
+            
+            queue.Enqueue(start);
+            dp.Add(start.PositionInt, 0);
+            
+            CheckNode(ref queue, ref dp, vector2);
         }
     }
-    
-    private void AnalyseRay(ref List<AStarNode> nodes, Vector2 dest)
+
+    private void CheckNode(ref PriorityQueue<AStarNode> queue, ref Dictionary<Vector2Int, float> dp, Vector2 target)
     {
-        AStarNode minNode = null;
-        float minSum = float.MaxValue;
-        
-        foreach (var node in nodes)
+        AStarNode node = queue.Dequeue();
+
+        foreach (var vector in _directions)
         {
-            float sum = Vector2.Distance(node.Position, dest) + node.Sum;
-            if (sum < minSum)
+            Vector2Int position = node.PositionInt + vector;
+            
+            Vector2 floatPosition = new Vector2(position.x / 10f, position.y / 10f);
+
+            AStarNode newNode = new AStarNode(position, node.Sum + 0.1f + GetSimpleSum(floatPosition, target), node);
+
+            float preAbleToRay = GetAbleToRay(ref node, newNode.Position);
+            
+            if (preAbleToRay < 0)
             {
-                minSum = sum;
-                minNode = node;
+                continue;
+            }
+            
+            if (dp.ContainsKey(position))
+            {
+                if(dp[position] > newNode.Sum)
+                {
+                    dp[position] = newNode.Sum;
+                    queue.Enqueue(newNode);
+                }
+            }
+            else
+            {
+                float ableToRay = GetAbleToRay(ref newNode, target);
+                if (ableToRay > 0 && ableToRay < 1f)
+                {
+                    AStarNode endNode = new AStarNode(target, newNode.Sum + ableToRay, newNode);
+                    DrawRay(endNode);
+                    return;
+                }
+                dp.Add(position, newNode.Sum);
+                queue.Enqueue(newNode);
             }
         }
         
-        if (minNode == null)
-            return;
-
-        if (minNode.Sum > 10)
-        {
-            Debug.Log("Sum > 10");
-            Draw(minNode, dest);
-            return;
-        }
-        
-        nodes.Remove(minNode);
-        
-        RaycastHit2D hit = Physics2D.Raycast(minNode.Position, dest - minNode.Position);
-        
-        if (hit.collider == null)
-        {
-            AStarNode node = new AStarNode(dest, minNode.Sum + Vector2.Distance(minNode.Position, dest), minNode);
-            Draw(node, dest);
-            return;
-        }
-        
-        SpreadNode(ref nodes, ref minNode);
-        
-        AnalyseRay(ref nodes, dest);
-    }
-
-    void SpreadNode(ref List<AStarNode> nodes, ref AStarNode node)
-    {
-        AddNode(ref nodes, ref node, node.Position + Vector2.up * 0.2f, node.Sum + 0.2f);
-        AddNode(ref nodes, ref node, node.Position + Vector2.down * 0.2f, node.Sum + 0.2f);
-        AddNode(ref nodes, ref node, node.Position + Vector2.right * 0.2f, node.Sum + 0.2f);
-        AddNode(ref nodes, ref node, node.Position + Vector2.left * 0.2f, node.Sum + 0.2f);
+        if (queue.Count > 0)
+            CheckNode(ref queue, ref dp, target);
     }
     
-    void AddNode(ref List<AStarNode> nodes, ref AStarNode node, Vector2 newVector, float sum)
+    private void DrawRay(AStarNode node)
     {
-        if (Physics2D.Raycast(node.Position, newVector - node.Position).collider == null)
-        {
-            AStarNode newNode = new AStarNode(newVector, sum, node);
-            CalcCost(ref newNode);
-            nodes.Add(newNode);
-            
-        }
+        if (node.Parent == null)
+            return;
+        
+        Debug.DrawRay(node.Position, node.Parent.Position - node.Position, Color.red, 1f);
+        DrawRay(node.Parent);
     }
     
-    void CalcCost(ref AStarNode node)
+    private float GetSum(ref AStarNode node, Vector2 position)
     {
-        if (node.Parent != null)
-        {
-            if(node.Parent.Parent == null)
-                return;
-            
-            if (Physics2D.Raycast(node.Position, node.Parent.Parent.Position - node.Position).collider == null)
-            {
-                node.Sum = Vector2.Distance(node.Position, node.Parent.Position) + node.Parent.Parent.Sum;
-                node.Parent = node.Parent.Parent;
-            }
-        }
+        return node.Sum + Vector2.Distance(node.Position, position);
     }
-
-    void Draw(AStarNode node, Vector2 dest)
+    
+    private float GetSimpleSum(Vector2 position, Vector2 target)
     {
-        Debug.Log("Draw");
-        if (node.Parent != null)
-        {
-            Debug.Log(node.Position + " " + node.Parent.Position + " " + dest);
-            Debug.DrawLine(node.Position, node.Parent.Position, Color.red, 2);
-            Draw(node.Parent, dest);
-        }
+        return Vector2.Distance(position, target);
+    }
+    
+    private float GetAbleToRay(ref AStarNode node, Vector2 position)
+    {
+        RaycastHit2D hit = Physics2D.Raycast(node.Position, position - node.Position);
+        
+        if (hit.collider != null)
+            return -1f;
+        
+        return Vector2.Distance(node.Position, position);
     }
 }
 
