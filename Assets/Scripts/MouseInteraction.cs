@@ -12,6 +12,9 @@ public class MouseInteraction : MonoBehaviour
     private Camera _camera;
 
     private AStarAgent _aStarAgent = new();
+
+    private Vector2 _a = Vector2.zero;
+    private Vector2 _b = Vector2.zero;
     
     [RuntimeInitializeOnLoadMethod]
     static void OnRuntimeMethodLoad()
@@ -25,9 +28,22 @@ public class MouseInteraction : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
-            Vector2 vector2 = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            
-            _aStarAgent.FindPath(vector2);
+            _a = _camera.ScreenToWorldPoint(Input.mousePosition);
+            CheckPath();
+        }
+        if(Input.GetMouseButtonDown(1))
+        {
+            _b = _camera.ScreenToWorldPoint(Input.mousePosition);
+            CheckPath();
+        }
+    }
+    
+    void CheckPath()
+    {
+        if (_a != Vector2.zero && _b != Vector2.zero)
+        {
+            PathMapAgent.Instance.FindPath(_a, _b);
+            Debug.Log("Path Found");
         }
     }
 }

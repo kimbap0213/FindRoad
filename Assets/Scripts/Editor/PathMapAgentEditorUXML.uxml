@@ -1,0 +1,10 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="True">
+    <uie:LayerMaskField label="LayerMask" />
+    <ui:Vector2Field label="position" binding-path="position" />
+    <ui:Vector2Field label="nodeSize" binding-path="nodeSize" />
+    <ui:Vector2IntField label="nodeCount" binding-path="nodeCount" />
+    <uie:PropertyField binding-path="PathNodes" />
+    <ui:Button text="Generate Node" parse-escape-sequences="true" display-tooltip-when-elided="true" tabindex="0" name="GenerateNode" />
+    <ui:Button text="Calculate Path" parse-escape-sequences="true" display-tooltip-when-elided="true" tabindex="0" name="CalculatePath" />
+    <ui:Button text="Reset Node" parse-escape-sequences="true" display-tooltip-when-elided="true" tabindex="0" name="ResetNode" />
+</ui:UXML>
