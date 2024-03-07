@@ -16,7 +16,8 @@ public class PathMapAgentEditor : Editor
         
         root.Query<Button>("GenerateNode").First().clicked += () => ((PathMapAgent)target).GenerateNode();
         root.Query<Button>("ResetNode").First().clicked += () => ((PathMapAgent)target).ResetNode();
-        root.Query<Button>("CalculatePath").First().clicked += () => ((PathMapAgent)target).CalculatePath();
+        root.Query<Button>("CalculateLine").First().clicked += () => ((PathMapAgent)target).CalculateLine();
+        root.Query<Button>("ResetLine").First().clicked += () => ((PathMapAgent)target).ResetLine();
         return root;
     }
 }

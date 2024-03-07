@@ -1,10 +1,15 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="True">
-    <uie:LayerMaskField label="LayerMask" />
+    <uie:LayerMaskField label="LayerMask" binding-path="layerMask" />
     <ui:Vector2Field label="position" binding-path="position" />
     <ui:Vector2Field label="nodeSize" binding-path="nodeSize" />
     <ui:Vector2IntField label="nodeCount" binding-path="nodeCount" />
-    <uie:PropertyField binding-path="PathNodes" />
+    <uie:PropertyField binding-path="pathNodes" />
+    <ui:Toggle label="Draw Grid" name="DrawGrid" binding-path="shouldDrawGrid" />
+    <ui:Toggle label="Draw Node" binding-path="shouldDrawNode" name="DrawNode" />
+    <ui:Toggle label="Draw Line" binding-path="shouldDrawLine" name="DrawLine" />
+    <ui:Toggle label="Draw At Runtime" binding-path="shouldDrawAtRuntime" name="DrawAtRuntime" />
     <ui:Button text="Generate Node" parse-escape-sequences="true" display-tooltip-when-elided="true" tabindex="0" name="GenerateNode" />
-    <ui:Button text="Calculate Path" parse-escape-sequences="true" display-tooltip-when-elided="true" tabindex="0" name="CalculatePath" />
+    <ui:Button text="Calculate Line" parse-escape-sequences="true" display-tooltip-when-elided="true" tabindex="0" name="CalculateLine" />
     <ui:Button text="Reset Node" parse-escape-sequences="true" display-tooltip-when-elided="true" tabindex="0" name="ResetNode" />
+    <ui:Button text="Reset Line" parse-escape-sequences="true" display-tooltip-when-elided="true" tabindex="0" name="ResetLine" />
 </ui:UXML>
